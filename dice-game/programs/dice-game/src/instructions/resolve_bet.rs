@@ -5,7 +5,6 @@ use solana_program::{
     blake3::hash, ed25519_program, sysvar::instructions::load_instruction_at_checked
 };
 #[derive(Accounts)]
-#[instruction(seed: u8)]
 pub struct ResolveBet<'info> {
     #[account(mut)]
     pub player: Signer<'info>,
@@ -20,8 +19,8 @@ pub struct ResolveBet<'info> {
     #[account(mut)]
     pub house: SystemAccount<'info>,
     #[account(
-      seeds = [b"bet", vault.key().as_ref(), seed.to_le_bytes().as_ref()],
-      bump
+      seeds = [b"bet", vault.key().as_ref(), bet.seed.to_le_bytes().as_ref()],
+      bump = bet.bump
     )]
     pub bet: Account<'info, Bet>,
     #[account(
@@ -76,7 +75,7 @@ impl<'info> ResolveBet<'info> {
             let signer_seeds =  &[&seeds[..][..]];
 
             let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
-            transfer(cpi_ctx, payout as u64);
+            transfer(cpi_ctx, payout as u64)?;
         }
 
         Ok(())

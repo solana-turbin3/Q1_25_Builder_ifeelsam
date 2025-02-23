@@ -1,5 +1,5 @@
 use anchor_lang::{prelude::*, system_program::{transfer, Transfer}};
-use crate::state::bet::Bet;
+use crate::state::Bet;
 #[derive(Accounts)]
 #[instruction(seed: u128)]
 pub struct PlaceBet<'info> {
@@ -7,7 +7,7 @@ pub struct PlaceBet<'info> {
     pub player: Signer<'info>,
     
     #[account(mut)]
-    pub house: Signer<'info>,
+    pub house: SystemAccount<'info>,
 
     #[account(
         mut,
@@ -19,7 +19,7 @@ pub struct PlaceBet<'info> {
         init,
         space = 8 + Bet::INIT_SPACE,
         payer = player,
-        seeds = [b"", vault.key().as_ref(), seed.to_le_bytes().as_ref()],
+        seeds = [b"bet", vault.key().as_ref(), seed.to_le_bytes().as_ref()],
         bump  
     )]
     pub bet: Account<'info, Bet>,
@@ -41,10 +41,12 @@ impl<'info> PlaceBet<'info> {
     
     pub fn diposit(&mut self, amount: u64) -> Result<()> {
         let cpi_program = self.system_program.to_account_info();
+
         let cpi_accounts = Transfer {
             from: self.player.to_account_info(),
             to: self.vault.to_account_info(),
         };
+
         let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
 
         transfer(cpi_ctx, amount)
